@@ -3,8 +3,6 @@ package russianpost
 import (
 	"encoding/xml"
 	"fmt"
-	"io/ioutil"
-	"net/http"
 	"strings"
 )
 
@@ -222,14 +220,14 @@ func (c *Client) GetOperationHistory(barcode, messegeType, language string) {
 		return
 	}
 	payload := strings.NewReader(string(xmlSoapRequest))
-	req, _ := http.NewRequest("POST", defaultBaseURL, payload)
+	req, _ := c.NewRequest("POST", "", payload)
 
 	req.Header.Add("content-type", "application/soap+xml")
 
-	res, _ := http.DefaultClient.Do(req)
-
-	defer res.Body.Close()
-	body, _ := ioutil.ReadAll(res.Body)
+	body, err := c.Do(req)
+	if err != nil {
+		return
+	}
 	v := Result{}
 	err = xml.Unmarshal([]byte(body), &v)
 	if err != nil {

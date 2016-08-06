@@ -1,6 +1,8 @@
 package russianpost
 
 import (
+	"io"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 )
@@ -32,4 +34,39 @@ func NewClient(serviceLogin, servicePassword string) *Client {
 
 	c := &Client{client: httpClient, baseURL: bURL, login: serviceLogin, password: servicePassword}
 	return c
+}
+
+// NewRequest creates an API request. A relative URL can be provided in urlStr,
+// in which case it is resolved relative to the BaseURL of the Client.
+func (c *Client) NewRequest(method, urlStr string, body io.Reader) (*http.Request, error) {
+	rel, err := url.Parse(urlStr)
+	if err != nil {
+		return nil, err
+	}
+
+	u := c.baseURL.ResolveReference(rel)
+
+	req, err := http.NewRequest(method, u.String(), body)
+	if err != nil {
+		return nil, err
+	}
+
+	return req, nil
+}
+
+// Do sends an API request and returns the API response.
+func (c *Client) Do(req *http.Request) ([]byte, error) {
+	resp, err := c.client.Do(req)
+	if err != nil {
+		return nil, err
+	}
+
+	defer resp.Body.Close()
+
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, err
+	}
+
+	return body, err
 }
