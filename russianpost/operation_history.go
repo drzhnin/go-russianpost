@@ -202,6 +202,15 @@ type DestinationAddress struct {
 }
 
 // GetOperationHistory возвращает историю операций над отправлением
+// barcode - Идентификатор регистрируемого почтового отправления в одном из форматов:
+//	- внутрироссийский, состоящий из 14 символов (цифровой);
+//	- международный, состоящий из 13 символов (буквенно-цифровой) в формате S10.
+// messegeType - Тип сообщения. Возможные значения:
+//	0 - история операций для отправления;
+//	1 - история операций для заказного уведомления по данному отправлению.
+// language - Язык, на котором должны возвращаться названия операций/атрибутов и сообщения об ошибках. Допустимые значения:
+//	RUS – использовать русский язык (используется по умолчанию);
+//	ENG – использовать английский язык.
 func (c *Client) GetOperationHistory(barcode, messegeType, language string) {
 	operHistReq := OperationHistoryRequest{Barcode: barcode, MessageType: messegeType, Language: language}
 	authHeader := AuthorizationHeader{MustUnderstand: "1", Login: c.login, Password: c.password}
