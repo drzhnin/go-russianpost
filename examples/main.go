@@ -484,5 +484,13 @@ func main() {
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-	fmt.Printf("%v", operationHistory)
+	for _, historyRecord := range operationHistory.HistoryRecords {
+		fmt.Println("================================")
+		fmt.Printf("Данные о посылке:\n Вес отправления: %dгр.\n", historyRecord.ItemParameters.Mass)
+		fmt.Printf("Операция над отправлением: %s — %s | Дата: %s\n", historyRecord.OperationParameters.OperType.Name, historyRecord.OperationParameters.OperAttr.Name, historyRecord.OperationParameters.OperDate)
+		if historyRecord.AddressParameters.DestinationAddress.Description != "" {
+			fmt.Printf("Место назначения: %s\n", historyRecord.AddressParameters.DestinationAddress.Description)
+		}
+		fmt.Printf("Место проведения операции: %s | Почтовый индекс: %s\n", historyRecord.AddressParameters.OperationAddress.Description, historyRecord.AddressParameters.OperationAddress.Index)
+	}
 }
