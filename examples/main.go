@@ -1,6 +1,8 @@
 package main
 
 import (
+	"fmt"
+
 	"github.com/andrewdruzhinin/go-russianpost/russianpost"
 	"github.com/jarcoal/httpmock"
 )
@@ -477,5 +479,10 @@ func main() {
 	</S:Body>
 </S:Envelope>`))
 	client := russianpost.NewClient("login", "password")
-	client.GetOperationHistory("44334455667733", "0", "RUS")
+	operationHistory, err := client.GetOperationHistory("44334455667733", "0", "RUS")
+
+	if err != nil {
+		fmt.Printf("%s", err)
+	}
+	fmt.Printf("%v", operationHistory)
 }

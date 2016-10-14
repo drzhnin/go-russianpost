@@ -211,7 +211,7 @@ type DestinationAddress struct {
 // language - Язык, на котором должны возвращаться названия операций/атрибутов и сообщения об ошибках. Допустимые значения:
 //	RUS – использовать русский язык (используется по умолчанию);
 //	ENG – использовать английский язык.
-func (c *Client) GetOperationHistory(barcode, messegeType, language string) {
+func (c *Client) GetOperationHistory(barcode, messegeType, language string) (OperationHistoryData, error) {
 	operHistReq := OperationHistoryRequest{Barcode: barcode, MessageType: messegeType, Language: language}
 	authHeader := AuthorizationHeader{MustUnderstand: "1", Login: c.login, Password: c.password}
 	soapRequestOper := SoapRequestOper{OperHistReq: operHistReq, AuthHeader: authHeader}
@@ -223,10 +223,11 @@ func (c *Client) GetOperationHistory(barcode, messegeType, language string) {
 		SoapEnvAttr: "http://schemas.xmlsoap.org/soap/envelope/",
 		Body:        soapRequestBody,
 	}
+	var historyData OperationHistoryData
 	xmlSoapRequest, err := xml.MarshalIndent(soapRequest, "", "    ")
 	if err != nil {
 		fmt.Println(err)
-		return
+		return historyData, err
 	}
 	payload := strings.NewReader(string(xmlSoapRequest))
 	req, _ := c.NewRequest("POST", "", payload)
@@ -235,15 +236,14 @@ func (c *Client) GetOperationHistory(barcode, messegeType, language string) {
 
 	body, err := c.Do(req)
 	if err != nil {
-		return
+		return historyData, err
 	}
-	v := Result{}
-	err = xml.Unmarshal([]byte(body), &v)
+	result := Result{}
+	err = xml.Unmarshal([]byte(body), &result)
 	if err != nil {
 		fmt.Printf("error: %v", err)
-		return
+		return historyData, err
 	}
-	for _, hR := range v.Body.GetOperationHistoryResponse.OperationHistoryData.HistoryRecords {
-		fmt.Printf("\t%#v\n", hR)
-	}
+	historyData = result.Body.GetOperationHistoryResponse.OperationHistoryData
+	return historyData, nil
 }
