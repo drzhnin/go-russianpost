@@ -479,18 +479,15 @@ func main() {
 	</S:Body>
 </S:Envelope>`))
 	client := russianpost.NewClient("login", "password")
-	operationHistory, err := client.GetOperationHistory("44334455667733", "0", "RUS")
+	data, err := client.GetOperationHistory("44334455667733", "0", "RUS")
 
 	if err != nil {
 		fmt.Printf("%s", err)
 	}
-	for _, historyRecord := range operationHistory.HistoryRecords {
-		fmt.Println("================================")
-		fmt.Printf("Данные о посылке:\n Вес отправления: %dгр.\n", historyRecord.ItemParameters.Mass)
-		fmt.Printf("Операция над отправлением: %s — %s | Дата: %s\n", historyRecord.OperationParameters.OperType.Name, historyRecord.OperationParameters.OperAttr.Name, historyRecord.OperationParameters.OperDate)
-		if historyRecord.AddressParameters.DestinationAddress.Description != "" {
-			fmt.Printf("Место назначения: %s\n", historyRecord.AddressParameters.DestinationAddress.Description)
+	for _, dataItem := range data.DataItems {
+		if dataItem.DestinationAddress != " " {
+			fmt.Printf("Пункт назначения: %s \n", dataItem.DestinationAddress)
 		}
-		fmt.Printf("Место проведения операции: %s | Почтовый индекс: %s\n", historyRecord.AddressParameters.OperationAddress.Description, historyRecord.AddressParameters.OperationAddress.Index)
+		fmt.Printf("%s /Вес отправления: %d / %s / %s\n", dataItem.Operation, dataItem.Mass, dataItem.OperationLocation, dataItem.OperarationDate)
 	}
 }

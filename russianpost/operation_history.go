@@ -201,14 +201,18 @@ type DestinationAddress struct {
 	Description string `xml:"Description"`
 }
 
-// Data содержит данные почтового отправления
+// Data содержит данные об операциях над почтовым отправлением
 type Data struct {
-	// место назначения
-	// вес отправления
-	// дата проведения оперрации над отправлением
-	// операция над отправлением (тип и атрибут)
-	// место проведения операции над отправлением (почтовый индекс, название)
-	//
+	DataItems []DataItem
+}
+
+// DataItem содержит данные об операции над почтовым отправлением
+type DataItem struct {
+	DestinationAddress string // место назначения
+	Mass               int    // вес отправления
+	OperarationDate    string // дата проведения оперрации над отправлением
+	Operation          string // операция над отправлением (тип и атрибут)
+	OperationLocation  string // место проведения операции над отправлением (почтовый индекс, название)
 }
 
 // GetOperationHistory возвращает историю операций над отправлением
@@ -221,7 +225,7 @@ type Data struct {
 // language - Язык, на котором должны возвращаться названия операций/атрибутов и сообщения об ошибках. Допустимые значения:
 //	RUS – использовать русский язык (используется по умолчанию);
 //	ENG – использовать английский язык.
-func (c *Client) GetOperationHistory(barcode, messegeType, language string) (OperationHistoryData, error) {
+func (c *Client) GetOperationHistory(barcode, messegeType, language string) (Data, error) {
 	operHistReq := OperationHistoryRequest{Barcode: barcode, MessageType: messegeType, Language: language}
 	authHeader := AuthorizationHeader{MustUnderstand: "1", Login: c.login, Password: c.password}
 	soapRequestOper := SoapRequestOper{OperHistReq: operHistReq, AuthHeader: authHeader}
@@ -233,11 +237,11 @@ func (c *Client) GetOperationHistory(barcode, messegeType, language string) (Ope
 		SoapEnvAttr: "http://schemas.xmlsoap.org/soap/envelope/",
 		Body:        soapRequestBody,
 	}
-	var historyData OperationHistoryData
+	var data Data
 	xmlSoapRequest, err := xml.MarshalIndent(soapRequest, "", "    ")
 	if err != nil {
 		fmt.Println(err)
-		return historyData, err
+		return data, err
 	}
 	payload := strings.NewReader(string(xmlSoapRequest))
 	req, _ := c.NewRequest("POST", "", payload)
@@ -246,14 +250,31 @@ func (c *Client) GetOperationHistory(barcode, messegeType, language string) (Ope
 
 	body, err := c.Do(req)
 	if err != nil {
-		return historyData, err
+		return data, err
 	}
 	result := Result{}
 	err = xml.Unmarshal([]byte(body), &result)
 	if err != nil {
 		fmt.Printf("error: %v", err)
-		return historyData, err
+		return data, err
 	}
-	historyData = result.Body.GetOperationHistoryResponse.OperationHistoryData
-	return historyData, nil
+	data = buildData(result)
+	return data, nil
+}
+
+// buildData преобразовываем данные об операциях над отправлением в нужный нам вид Data/DataItem
+func buildData(result Result) Data {
+	var data Data
+
+	for _, historyRecord := range result.Body.GetOperationHistoryResponse.OperationHistoryData.HistoryRecords {
+		var dataItem DataItem
+		dataItem.DestinationAddress = historyRecord.AddressParameters.DestinationAddress.Index + " " + historyRecord.AddressParameters.DestinationAddress.Description
+		dataItem.Mass = historyRecord.ItemParameters.Mass
+		dataItem.OperarationDate = historyRecord.OperationParameters.OperDate
+		dataItem.Operation = historyRecord.OperationParameters.OperType.Name + " " + historyRecord.OperationParameters.OperAttr.Name
+		dataItem.OperationLocation = historyRecord.AddressParameters.OperationAddress.Description + " " + historyRecord.AddressParameters.OperationAddress.Index
+		data.DataItems = append(data.DataItems, dataItem)
+	}
+
+	return data
 }
