@@ -4,6 +4,7 @@ import (
 	"encoding/xml"
 	"fmt"
 	"strings"
+	"time"
 )
 
 // SoapRequest структура soap запроса
@@ -270,11 +271,21 @@ func buildData(result Result) Data {
 		var dataItem DataItem
 		dataItem.DestinationAddress = historyRecord.AddressParameters.DestinationAddress.Index + " " + historyRecord.AddressParameters.DestinationAddress.Description
 		dataItem.Mass = historyRecord.ItemParameters.Mass
-		dataItem.OperarationDate = historyRecord.OperationParameters.OperDate
+		dataItem.OperarationDate = dateFormat(historyRecord.OperationParameters.OperDate)
 		dataItem.Operation = historyRecord.OperationParameters.OperType.Name + " " + historyRecord.OperationParameters.OperAttr.Name
 		dataItem.OperationLocation = historyRecord.AddressParameters.OperationAddress.Description + " " + historyRecord.AddressParameters.OperationAddress.Index
 		data.DataItems = append(data.DataItems, dataItem)
 	}
 
 	return data
+}
+
+// dateFormat преобразовывем дату в нужный формат, возвращаем в виде строки
+func dateFormat(dateTime string) string {
+	t, err := time.Parse(time.RFC3339, dateTime)
+	if err != nil {
+		fmt.Println(err)
+	}
+	dateTimeResult := fmt.Sprintf("%d %s %d %d:%d", t.Day(), t.Month(), t.Year(), t.Hour(), t.Minute())
+	return dateTimeResult
 }
